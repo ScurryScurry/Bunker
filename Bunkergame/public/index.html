@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+    <title>Гра БУНКЕР</title>
+    <style>
+        /* --- 1. ОСНОВНИЙ ДИЗАЙН --- */
+        body { 
+            font-family: 'Segoe UI', sans-serif; background: #1a1a1a; color: #eee; 
+            margin: 0; padding: 20px; text-align: center; 
+            overflow-x: hidden; /* Щоб не було горизонтального скролу */
+        }
+        
+        .container { 
+            max-width: 500px; margin: 0 auto; padding-bottom: 80px; 
+            transition: filter 0.3s; /* Для ефекту розмиття */
+        }
+        
+        /* Ефект розмиття фону при відкритому модальному вікні */
+        body.modal-open .container { filter: blur(5px); pointer-events: none; }
+
+        .screen { display: none; }
+        .screen.active { display: block; animation: fadeIn 0.5s; }
+        
+        h1 { color: #ffcc00; letter-spacing: 2px; text-transform: uppercase; margin-bottom: 30px; }
+
+        /* --- 2. ЕЛЕМЕНТИ УПРАВЛІННЯ --- */
+        input { 
+            width: 80%; padding: 15px; margin: 10px 0; border-radius: 10px; border: none; 
+            background: #333; color: #fff; font-size: 1.1rem; text-align: center; outline: none;
+        }
+        input:focus { box-shadow: 0 0 0 2px #ffcc00; }
+
+        .main-btn {
+            background: #ffcc00; color: #000; border: none; padding: 15px 30px;
+            font-size: 1.2rem; font-weight: bold; border-radius: 50px; cursor: pointer; width: 90%; margin-top: 10px;
+            box-shadow: 0 5px 15px rgba(255, 204, 0, 0.3); transition: transform 0.1s;
+        }
+        .main-btn:active { transform: scale(0.95); }
+
+        /* --- 3. СПИСОК ГРАВЦІВ (ЛОБІ) --- */
+        #player-list { list-style: none; padding: 0; text-align: left; }
+        #player-list li { 
+            background: #2b2b2b; margin: 5px 0; padding: 15px; border-radius: 8px; 
+            border-left: 4px solid #ffcc00; font-size: 1.1rem;
+        }
+
+        /* --- 4. ІНФО-БЛОКИ (КАТАСТРОФА/БУНКЕР) --- */
+        .info-box {
+            padding: 15px; border-radius: 10px; margin-bottom: 15px; 
+            text-align: left; position: relative; border: 2px solid rgba(255,255,255,0.1);
+        }
+        .disaster-box { background: linear-gradient(135deg, #b71c1c, #880e4f); box-shadow: 0 5px 15px rgba(183, 28, 28, 0.4); }
+        .bunker-box { background: linear-gradient(135deg, #0d47a1, #1565c0); box-shadow: 0 5px 15px rgba(13, 71, 161, 0.4); }
+        
+        .box-icon { 
+            position: absolute; top: -10px; right: 10px; 
+            background: #222; padding: 4px 10px; border-radius: 20px; 
+            font-size: 0.8rem; font-weight: bold; border: 1px solid #555; box-shadow: 0 2px 5px #000;
+        }
+        
+        .info-box h2 { margin: 10px 0 5px 0; font-size: 1.4rem; color: white; text-shadow: 1px 1px 2px black; }
+        .info-box p { margin: 5px 0; font-size: 0.95rem; line-height: 1.4; color: #eee; }
+        .sub-info { font-size: 0.9rem; color: #ddd; margin-top: 8px; font-style: italic; background: rgba(0,0,0,0.2); padding: 5px; border-radius: 5px; }
+        
+        .places-counter { 
+            margin-top: 10px; padding-top: 10px; border-top: 1px solid rgba(255,255,255,0.3); 
+            text-align: center; font-weight: bold; font-size: 1.1rem;
+        }
+
+        /* --- 5. КАРТКА ГРАВЦЯ --- */
+        .card { background: #2b2b2b; padding: 20px; border-radius: 15px; text-align: left; border: 1px solid #444; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+        .section { margin-bottom: 15px; padding-bottom: 10px; border-bottom: 1px solid #444; }
+        .section:last-child { border-bottom: none; }
+        
+        .label { color: #888; font-size: 0.8rem; text-transform: uppercase; display: block; margin-bottom: 4px; letter-spacing: 1px; }
+        .val { font-size: 1.1rem; font-weight: 500; color: #fff; }
+        .abil { color: #f0a500; font-size: 0.95rem; font-style: italic; margin-top: 3px; }
+
+        /* --- 6. КНОПКИ ДІЙ (USE) --- */
+        .use-btn {
+            display: inline-block; margin-top: 8px; padding: 8px 16px;
+            background: #444; color: #fff; border: 1px solid #666;
+            border-radius: 6px; font-size: 0.9rem; cursor: pointer; text-transform: uppercase; font-weight: bold;
+            transition: all 0.2s;
+        }
+        .use-btn:hover { background: #666; border-color: #999; }
+        .use-btn:active { transform: scale(0.95); }
+        .use-btn:disabled { background: #222; color: #555; border-color: #333; cursor: not-allowed; }
+
+        /* Стан "Використано" */
+        .used-state { opacity: 0.5; filter: grayscale(1); pointer-events: none; }
+
+        /* --- 7. СПЕЦКАРТКИ --- */
+        .action-card {
+            background: #333; border: 1px dashed #666; 
+            padding: 15px; margin-top: 15px; border-radius: 10px; position: relative;
+        }
+        .action-card h3 { margin: 0 0 5px 0; font-size: 1.1rem; color: #ff9966; }
+        .action-card p { margin: 0 0 10px 0; font-size: 0.95rem; color: #ccc; }
+
+        /* --- 8. МОДАЛЬНЕ ВІКНО (ВИБІР ЦІЛІ) --- */
+        .modal-overlay {
+            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.8); z-index: 1000; 
+            justify-content: center; align-items: center;
+        }
+        .modal-overlay.active { display: flex; animation: popIn 0.3s; }
+        
+        .modal-box {
+            background: #2b2b2b; width: 90%; max-width: 350px; padding: 25px;
+            border-radius: 15px; border: 2px solid #ffcc00; text-align: center;
+            box-shadow: 0 0 20px rgba(255, 204, 0, 0.2);
+        }
+        .modal-box h3 { margin-top: 0; color: #ffcc00; text-transform: uppercase; }
+        
+        .target-list { 
+            list-style: none; padding: 0; margin: 20px 0; 
+            max-height: 300px; overflow-y: auto; 
+        }
+        .target-list li {
+            background: #444; margin: 8px 0; padding: 12px; border-radius: 8px;
+            cursor: pointer; transition: background 0.2s; color: white; border: 1px solid #555;
+            font-weight: bold;
+        }
+        .target-list li:hover { background: #ffcc00; color: #000; border-color: #ffcc00; }
+        
+        .cancel-btn { 
+            background: transparent; border: 1px solid #888; color: #888; 
+            padding: 8px 20px; border-radius: 20px; cursor: pointer; font-size: 0.9rem; 
+        }
+        .cancel-btn:hover { border-color: #eee; color: #eee; }
+
+        @keyframes popIn { from { transform: scale(0.8); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>☢️ B.U.N.K.E.R ☢️</h1>
+
+        <div id="screen-login" class="screen active">
+            <p style="color:#888; margin-bottom: 20px;">Введи своє ім'я та код кімнати</p>
+            <input type="text" id="username" placeholder="Твоє ім'я (напр. Сталкер)" autocomplete="off">
+            <input type="text" id="roomCode" placeholder="Код кімнати (напр. 777)" autocomplete="off">
+            <button class="main-btn" onclick="joinGame()">УВІЙТИ</button>
+        </div>
+
+        <div id="screen-lobby" class="screen">
+            <h2>Лобі</h2>
+            <div style="background: #333; padding: 10px; border-radius: 10px; display: inline-block; margin-bottom: 10px;">
+                Кімната: <strong id="display-room" style="color:#ffcc00; font-size: 1.2rem;">---</strong>
+            </div>
+            
+            <p style="text-align: left; color: #888; margin-left: 5px;">Список гравців:</p>
+            <ul id="player-list"></ul>
+            
+            <button id="btn-start" class="main-btn" onclick="startGame()" style="display:none; background: #d32f2f; color: white;">
+                ПОЧАТИ ГРУ 🚀
+            </button>
+            <p id="wait-msg" style="color: #666; margin-top: 20px; font-style: italic;">Чекаємо на адміна...</p>
+        </div>
+
+        <div id="screen-game" class="screen">
+            
+            <div class="info-box disaster-box">
+                <div class="box-icon">🔥 КАТАСТРОФА</div>
+                <h2 id="dst-name">Назва</h2>
+                <p id="dst-desc"></p>
+                <div class="sub-info">⏳ <span id="dst-time"></span></div>
+                <div class="sub-info">ℹ️ <span id="dst-res"></span></div>
+            </div>
+
+            <div class="info-box bunker-box">
+                <div class="box-icon">🛡️ БУНКЕР</div>
+                <h2 id="bnk-name">Назва</h2>
+                <p id="bnk-desc"></p>
+                <div class="sub-info">📦 <span id="bnk-sup"></span></div>
+                <div class="places-counter">
+                    МІСЦЬ: <span id="bnk-places" style="font-size:1.4em; color: #ffeb3b;">0</span> 
+                    <span style="font-size: 0.8em; font-weight: normal;">(Гравців: <span id="bnk-total">0</span>)</span>
+                </div>
+            </div>
+
+            <div class="card">
+                
+                <div class="section">
+                    <span class="label">👤 Біографія</span>
+                    <div class="val" id="bio-identity"></div>
+                </div>
+
+                <div class="section">
+                    <span class="label">📏 Тілобудова</span>
+                    <div class="val" id="bio-body"></div>
+                </div>
+
+                <div class="section">
+                    <span class="label">🛠 Професія</span>
+                    <div class="val" id="prof"></div>
+                    <div class="abil" id="prof-ab"></div>
+                    <button class="use-btn" id="btn-prof-use">ВИКОРИСТАТИ</button>
+                </div>
+
+                <div class="section">
+                    <span class="label">❤️ Здоров'я</span>
+                    <div class="val" id="health"></div>
+                </div>
+
+                <div class="section">
+                    <span class="label">😱 Фобія</span>
+                    <div class="val" id="fear" style="color: #ff8a80;"></div>
+                </div>
+
+                <div class="section">
+                    <span class="label">🎲 Хобі</span>
+                    <div class="val" id="hobby"></div>
+                    <div class="abil" id="hobby-ab"></div>
+                </div>
+
+                <div class="section">
+                    <span class="label">🎒 Рюкзак (Дрібне)</span>
+                    <div class="val" id="bag-small"></div>
+                </div>
+
+                <div class="section">
+                    <span class="label">🧳 Валіза (Велике)</span>
+                    <div class="val" id="bag-big"></div>
+                </div>
+
+                <div class="section">
+                    <span class="label">📄 Факт</span>
+                    <div class="val" id="fact" style="font-style: italic; color: #aaa;"></div>
+                </div>
+
+                <div class="section" style="border-top: 2px solid #555; margin-top: 20px; padding-top: 15px; border-bottom: none;">
+                    <span class="label" style="text-align:center; margin-bottom:10px; color:#ffcc00">🃏 ВАШІ СПЕЦКАРТКИ</span>
+                    <div id="action-cards-container"></div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <div id="modal-select" class="modal-overlay">
+        <div class="modal-box">
+            <h3>ОБЕРИ ЦІЛЬ 🎯</h3>
+            <ul id="target-list" class="target-list"></ul>
+            <button class="cancel-btn" onclick="closeModal()">Скасувати</button>
+        </div>
+    </div>
+
+    <script src="https://cdn.socket.io/4.7.4/socket.io.min.js"></script>
+    <script>
+        const socket = io();
+        let currentRoom = "";
+        let allPlayers = [];
+        let pendingAction = null; // { type: 'card'|'prof', id: '...' }
+
+        // --- ВХІД ---
+        function joinGame() {
+            const name = document.getElementById('username').value;
+            const room = document.getElementById('roomCode').value;
+            if(!name || !room) return alert("Будь ласка, заповніть всі поля!");
+            currentRoom = room;
+            socket.emit('join_room', { name, roomCode: room });
+            showScreen('screen-lobby');
+            document.getElementById('display-room').innerText = room;
+        }
+
+        // --- ОНОВЛЕННЯ СПИСКУ ГРАВЦІВ ---
+        socket.on('update_players', (players) => {
+            allPlayers = players; // Зберігаємо список для модалки
+            const list = document.getElementById('player-list');
+            list.innerHTML = "";
+            const me = players.find(p => p.id === socket.id);
+            players.forEach(p => {
+                const li = document.createElement('li');
+                li.innerText = p.name + (p.isHost ? " 👑" : "");
+                list.appendChild(li);
+            });
+            if (me && me.isHost) {
+                document.getElementById('btn-start').style.display = 'block';
+                document.getElementById('wait-msg').style.display = 'none';
+            }
+        });
+
+        // --- СТАРТ ГРИ ---
+        function startGame() { socket.emit('start_game', currentRoom); }
+
+        // --- РЕНДЕР ГРИ ---
+        socket.on('game_started', (data) => {
+            showScreen('screen-game');
+            const g = data.game;
+            const p = data.me;
+            const usedCards = data.usedCards || [];
+
+            // Катастрофа / Бункер
+            document.getElementById('dst-name').innerText = g.disaster.name;
+            document.getElementById('dst-desc').innerText = g.disaster.description;
+            document.getElementById('dst-time').innerText = g.disaster.time;
+            document.getElementById('dst-res').innerText = g.disaster.residue;
+
+            document.getElementById('bnk-name').innerText = g.bunker.name;
+            document.getElementById('bnk-desc').innerText = g.bunker.description;
+            document.getElementById('bnk-sup').innerText = g.bunker.supplies;
+            document.getElementById('bnk-places').innerText = g.places;
+            document.getElementById('bnk-total').innerText = g.total_players;
+
+            // Біографія
+            if(p.bio) {
+                document.getElementById('bio-identity').innerText = `${p.bio.sex}, ${p.bio.age}р (${p.bio.gender})`;
+                document.getElementById('bio-body').innerText = `${p.bio.height} см, ${p.bio.weight} кг`;
+            }
+
+            // Професія
+            if(p.profession) {
+                document.getElementById('prof').innerText = p.profession.name;
+                document.getElementById('prof-ab').innerText = p.profession.ability;
+                
+                const btn = document.getElementById('btn-prof-use');
+                if(data.professionUsed) {
+                    btn.innerText = "ВИКОРИСТАНО";
+                    btn.disabled = true;
+                    btn.parentElement.classList.add('used-state');
+                } else {
+                    btn.innerText = "ВИКОРИСТАТИ";
+                    btn.disabled = false;
+                    btn.parentElement.classList.remove('used-state');
+                    // Додаємо обробник події
+                    btn.onclick = () => preCheckAction('prof', null, p.profession.id);
+                }
+            }
+
+            // Здоров'я / Фобії / Хобі
+            if(p.health) document.getElementById('health').innerText = `${p.health.name} ${p.health.stage || ''}`;
+            if(p.fear) document.getElementById('fear').innerText = p.fear;
+            if(p.hobby) {
+                document.getElementById('hobby').innerText = p.hobby.name;
+                document.getElementById('hobby-ab').innerText = p.hobby.ability;
+            }
+            if(p.baggage) {
+                document.getElementById('bag-small').innerText = p.baggage.small;
+                document.getElementById('bag-big').innerText = p.baggage.big;
+            }
+            if(p.fact) document.getElementById('fact').innerText = p.fact;
+
+            // Картки
+            const cardsCont = document.getElementById('action-cards-container');
+            cardsCont.innerHTML = "";
+            if (p.cards && p.cards.length > 0) {
+                p.cards.forEach(card => {
+                    const div = document.createElement('div');
+                    div.className = 'action-card';
+                    const isUsed = usedCards.includes(card.id);
+                    
+                    div.innerHTML = `
+                        <h3>${card.name}</h3>
+                        <p>${card.description}</p>
+                        <button class="use-btn" ${isUsed ? 'disabled' : ''}>
+                            ${isUsed ? "ВЖЕ ВИКОРИСТАНО" : "ВИКОРИСТАТИ"}
+                        </button>
+                    `;
+                    if(isUsed) div.classList.add('used-state');
+                    else {
+                        div.querySelector('button').onclick = () => preCheckAction('card', card, card.id);
+                    }
+                    cardsCont.appendChild(div);
+                });
+            } else {
+                cardsCont.innerHTML = "<p style='color:#666'>Немає карток</p>";
+            }
+        });
+
+        // --- ЛОГІКА ДІЙ ТА МОДАЛЬНОГО ВІКНА ---
+
+        function preCheckAction(type, obj, id) {
+            // Завжди відкриваємо модалку для вибору гравця
+            // Це універсальний підхід. Якщо картка "на всіх", ID ігнорується сервером.
+            pendingAction = { type, id };
+            openModal();
+        }
+
+        function openModal() {
+            const list = document.getElementById('target-list');
+            list.innerHTML = "";
+            
+            // Заповнюємо список гравців
+            allPlayers.forEach(player => {
+                const li = document.createElement('li');
+                li.innerText = player.name + (player.id === socket.id ? " (Я)" : "");
+                li.onclick = () => confirmSelection(player.id);
+                list.appendChild(li);
+            });
+
+            document.getElementById('modal-select').classList.add('active');
+            document.body.classList.add('modal-open');
+        }
+
+        function closeModal() {
+            document.getElementById('modal-select').classList.remove('active');
+            document.body.classList.remove('modal-open');
+            pendingAction = null;
+        }
+
+        function confirmSelection(targetId) {
+            if(!pendingAction) return;
+            
+            if(pendingAction.type === 'card') {
+                socket.emit('use_card', { roomCode: currentRoom, cardId: pendingAction.id, targetId });
+            } else if (pendingAction.type === 'prof') {
+                socket.emit('use_profession', { roomCode: currentRoom, targetId });
+            }
+            closeModal();
+        }
+
+        socket.on('notification', msg => alert("🔔 " + msg));
+
+        function showScreen(id) {
+            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+            document.getElementById(id).classList.add('active');
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,6 @@
+id;name;ability;effect;target;attribute
+prof_hr;HR-менеджер;Зміни професію будь-якому гравцю.;RANDOM;SELECT_PLAYER;profession
+prof_doc;Лікар;Вилікуй будь-кого.;HEAL;SELECT_PLAYER;health
+prof_psy;Психолог;Вилікуй фобію будь-кому.;HEAL;SELECT_PLAYER;fear
+prof_tchr;Вчитель;Зміни хобі гравцю.;RANDOM;SELECT_PLAYER;hobby
+prof_dev;Айтішник;Зміни свою професію.;RANDOM;SELF;profession

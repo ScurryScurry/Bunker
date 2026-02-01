@@ -1,0 +1,5 @@
+id;name;description;effect;target;attribute
+act_chaos;Хаос;Нові професії для всіх!;RANDOM;ALL;profession
+act_fire;Звільнення;Зміни професію обраному гравцю.;RANDOM;SELECT_PLAYER;profession
+act_heal;Лікування;Вилікуй когось.;HEAL;SELECT_PLAYER;health
+act_panic;Паніка;Зміни фобію комусь.;RANDOM;SELECT_PLAYER;fear
